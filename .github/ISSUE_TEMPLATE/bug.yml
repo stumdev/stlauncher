@@ -1,0 +1,43 @@
+name: Relatar um bug
+description: Algo não funciona como deveria
+labels: [bug]
+body:
+  - type: textarea
+    id: o-que-aconteceu
+    attributes:
+      label: O que aconteceu?
+      description: Descreva o problema e o que você esperava. Se apareceu uma mensagem de erro, copie o texto dela.
+    validations:
+      required: true
+  - type: textarea
+    id: como-reproduzir
+    attributes:
+      label: Como reproduzir
+      placeholder: |
+        1. Abri o launcher e ...
+        2. Cliquei em Jogar ...
+        3. Vi o erro ...
+    validations:
+      required: true
+  - type: dropdown
+    id: parte
+    attributes:
+      label: Onde acontece
+      options: [Instalação (Java, Minecraft, NeoForge), Download do modpack, Abrir o jogo / crash, Interface do launcher, Atualização do launcher, API / publicação do pack, Não sei]
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: Na aba Console, clique em "Copiar log" e cole aqui (ou anexe o arquivo `logs/ultimo-jogo.log`).
+      render: text
+  - type: input
+    id: ambiente
+    attributes:
+      label: Ambiente
+      description: Versão do Windows, versão do launcher (Sobre) e quanta RAM o PC tem.
+      placeholder: Windows 11, launcher 1.0.0, 16 GB
+  - type: markdown
+    attributes:
+      value: "⚠️ Nunca cole o ADMIN_TOKEN, o conteúdo do `.env` ou a chave privada do updater aqui."

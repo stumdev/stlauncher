@@ -1,0 +1,17 @@
+# dependências e builds
+node_modules/
+dist/
+launcher/src-tauri/target/
+launcher/src-tauri/gen/
+
+# segredos e dados locais
+.env
+*.key
+api/data/
+
+# sistema/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log

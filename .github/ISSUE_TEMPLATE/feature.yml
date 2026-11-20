@@ -1,0 +1,16 @@
+name: Sugerir uma funcionalidade
+description: Uma ideia para melhorar o STLauncher
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problema
+    attributes:
+      label: Qual problema isso resolve?
+    validations:
+      required: true
+  - type: textarea
+    id: ideia
+    attributes:
+      label: Como você imagina a solução?
+    validations:
+      required: true

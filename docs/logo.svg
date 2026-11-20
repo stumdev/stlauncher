@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="STLauncher" shape-rendering="crispEdges">
+  <rect width="120" height="120" rx="28" fill="#1f2633"/>
+  <!-- bloco de glowstone isométrico -->
+  <path d="M60 14 104 36v50L60 108 16 86V36z" fill="#0f131b"/>
+  <path d="M60 20 98 39 60 58 22 39z" fill="#f4b942"/>
+  <path d="M22 39 60 58v44L22 83z" fill="#d99a2b"/>
+  <path d="M98 39 60 58v44l38-19z" fill="#a8721a"/>
+  <path d="M44 33h6v4h-6zM62 27h6v4h-6zM70 41h6v4h-6zM52 45h6v4h-6zM80 35h4v4h-4z" fill="#ffe7a3"/>
+  <path d="M30 52h5v5h-5zM42 70h5v5h-5zM34 78h5v5h-5zM48 60h4v4h-4z" fill="#e3a636"/>
+  <path d="M72 70h5v5h-5zM84 58h5v5h-5zM78 84h4v4h-4z" fill="#946314"/>
+</svg>
