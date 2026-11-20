@@ -54,9 +54,11 @@ jobs:
           Copy-Item launcher/src-tauri/target/release/stlauncher.exe "out/STLauncher_${v}_portable.exe"
           Copy-Item launcher/src-tauri/target/release/bundle/nsis/*-setup.exe out/
           Copy-Item launcher/src-tauri/target/release/bundle/nsis/*-setup.exe.sig out/
-          Get-ChildItem out -File | ForEach-Object {
+          $sums = Get-ChildItem out -File | ForEach-Object {
             "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
-          } | Set-Content out/SHA256SUMS.txt -Encoding ascii
+          }
+          # LF para o sha256sum -c funcionar em qualquer sistema
+          [IO.File]::WriteAllText("$PWD/out/SHA256SUMS.txt", (($sums -join "`n") + "`n"))
           Get-ChildItem out | Format-Table Name, Length
 
       - name: Notas da versão (do CHANGELOG)
