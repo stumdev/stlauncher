@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Launcher</title>
+  </head>
+  <body>
+    <div id="app">
+      <!-- Barra de título própria (a janela não tem a moldura do Windows) -->
+      <header class="titlebar" data-tauri-drag-region>
+        <div class="brand" data-tauri-drag-region>
+          <svg class="brand-cube" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" shape-rendering="crispEdges">
+            <path d="M8 1 15 4.5v7L8 15 1 11.5v-7z" fill="#B57F1E" />
+            <path d="M8 1 15 4.5 8 8 1 4.5z" fill="#F4B942" />
+            <path d="M8 8v7l-7-3.5v-7z" fill="#D99A2B" />
+          </svg>
+          <span id="launcher-name" class="brand-name" data-tauri-drag-region>Launcher</span>
+        </div>
+        <!-- Ícones em pixel-art (grade 12x12), no mesmo estilo do botão Jogar -->
+        <div class="title-actions">
+          <button id="btn-settings" class="chip" title="Configurações">
+            <svg viewBox="0 0 12 12" width="14" height="14" aria-hidden="true" shape-rendering="crispEdges">
+              <path fill="currentColor" fill-rule="evenodd" d="M5 0h2v2H5zM5 10h2v2H5zM0 5h2v2H0zM10 5h2v2h-2zM3 2h6v1h1v6h-1v1H3v-1H2V3h1zM5 4h2v1h1v2H7v1H5V7H4V5h1z" />
+            </svg>
+            <span>Configurações</span>
+          </button>
+          <span class="title-divider" aria-hidden="true"></span>
+          <button id="btn-min" class="wc" title="Minimizar" aria-label="Minimizar">
+            <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" shape-rendering="crispEdges"><path fill="currentColor" d="M1 6h10v2H1z" /></svg>
+          </button>
+          <button id="btn-close" class="wc close" title="Fechar" aria-label="Fechar">
+            <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" shape-rendering="crispEdges">
+              <path fill="currentColor" d="M1 1h2v2H1zM3 3h2v2H3zM5 5h2v2H5zM7 7h2v2H7zM9 9h2v2H9zM9 1h2v2H9zM7 3h2v2H7zM3 7h2v2H3zM1 9h2v2H1z" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main>
+        <!-- Cena: céu + terreno em blocos. Tudo que o jogador precisa para entrar. -->
+        <section class="scene">
+          <canvas id="terrain" aria-hidden="true"></canvas>
+
+          <div class="server" id="server">
+            <div class="server-head">
+              <span id="srv-dot" class="face" aria-hidden="true"></span>
+              <span id="srv-title" class="server-title">Procurando o servidor</span>
+            </div>
+            <p id="srv-motd" class="server-motd">&nbsp;</p>
+            <div class="server-meta">
+              <span id="srv-players"></span>
+            </div>
+          </div>
+
+          <div class="launch">
+            <label for="nick" class="nick-label">Seu nome no jogo</label>
+            <div class="nick-wrap">
+              <input id="nick" type="text" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Ex: Steve_123" />
+            </div>
+
+            <button id="btn-play" class="play"><span id="play-label">Jogar</span></button>
+
+            <!-- Espaço de altura fixa: progresso ou aviso aparecem aqui sem mover o botão. -->
+            <div class="slot">
+              <div id="nick-error" class="field-error hidden" role="alert"></div>
+              <div id="progress" class="progress hidden" aria-live="polite">
+                <div id="progress-stage" class="progress-stage">Preparando</div>
+                <div id="blocks" class="blocks" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
+                <div id="progress-detail" class="progress-detail"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="board">
+          <!-- Avisos ficam no painel direito: nunca deslocam o botão Jogar. -->
+          <div id="banner" class="banner hidden" role="status"></div>
+          <nav class="tabs" role="tablist">
+            <button class="tab active" data-tab="news" role="tab">Novidades</button>
+            <button class="tab" data-tab="console" role="tab">Console</button>
+            <span class="tabs-spacer"></span>
+            <button id="btn-copy-log" class="ghost-btn hidden">Copiar log</button>
+          </nav>
+          <article id="tab-news" class="panel news"></article>
+          <pre id="tab-console" class="panel console hidden"></pre>
+        </section>
+      </main>
+
+      <!-- Atualização do launcher -->
+      <div id="update-overlay" class="overlay hidden">
+        <div class="dialog compact">
+          <h2>Atualizando o launcher</h2>
+          <p id="update-text">Baixando a versão nova.</p>
+          <div class="thin-bar"><div id="update-fill"></div></div>
+        </div>
+      </div>
+
+      <!-- Crash -->
+      <div id="crash-overlay" class="overlay hidden">
+        <div class="dialog" role="alertdialog" aria-labelledby="crash-title">
+          <h2 id="crash-title">O jogo fechou com erro</h2>
+          <p id="crash-summary"></p>
+          <div class="dialog-actions">
+            <button id="crash-folder" class="btn">Abrir pasta do jogo</button>
+            <button id="crash-copy" class="btn">Copiar log</button>
+            <button id="crash-close" class="btn primary">Entendi</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mensagem (erro ou confirmação) -->
+      <div id="error-overlay" class="overlay hidden">
+        <div class="dialog" role="alertdialog" aria-labelledby="error-title">
+          <h2 id="error-title">Não foi possível continuar</h2>
+          <p id="error-text"></p>
+          <div class="dialog-actions">
+            <button id="error-copy" class="btn">Copiar mensagem</button>
+            <button id="error-close" class="btn primary">OK</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Configurações -->
+      <div id="settings-overlay" class="overlay hidden">
+        <div class="dialog settings" role="dialog" aria-labelledby="settings-title">
+          <h2 id="settings-title">Configurações</h2>
+
+          <div class="setting">
+            <div class="setting-row">
+              <label for="ram">Memória para o jogo</label>
+              <output id="ram-value" class="ram-value"></output>
+            </div>
+            <input id="ram" type="range" step="256" />
+            <label class="check"><input id="ram-auto" type="checkbox" /><span>Escolher automaticamente</span></label>
+            <p id="ram-hint" class="hint"></p>
+          </div>
+
+          <div class="setting split">
+            <div>
+              <label for="res-w">Tamanho da janela do jogo</label>
+              <div class="res">
+                <input id="res-w" type="number" min="640" placeholder="Largura" />
+                <span aria-hidden="true">×</span>
+                <input id="res-h" type="number" min="480" placeholder="Altura" />
+              </div>
+              <p class="hint">Deixe vazio para usar o padrão do jogo.</p>
+            </div>
+            <div>
+              <span class="label-like">Ao abrir o jogo</span>
+              <label class="check"><input id="quickplay" type="checkbox" /><span>Entrar direto no servidor</span></label>
+            </div>
+          </div>
+
+          <details class="advanced">
+            <summary>Avançado</summary>
+            <div class="setting">
+              <label for="gamedir">Pasta do jogo</label>
+              <input id="gamedir" type="text" spellcheck="false" placeholder="Vazio = pasta padrão" />
+              <p class="hint" id="gamedir-hint"></p>
+            </div>
+            <div class="setting">
+              <div class="setting-row">
+                <label for="jvm">Argumentos da Java</label>
+                <button id="jvm-reset" class="text-btn" type="button">Restaurar padrão</button>
+              </div>
+              <textarea id="jvm" rows="3" spellcheck="false"></textarea>
+            </div>
+          </details>
+
+          <div class="tools">
+            <button id="btn-open-dir" class="tool">
+              <strong>Abrir pasta do jogo</strong><span>Prints, mundos e logs</span>
+            </button>
+            <button id="btn-repair" class="tool">
+              <strong>Reparar instalação</strong><span>Verifica e baixa de novo o que estiver errado</span>
+            </button>
+            <button id="btn-clear" class="tool">
+              <strong>Limpar cache</strong><span>Apaga instaladores temporários</span>
+            </button>
+          </div>
+
+          <div id="settings-error" class="field-error hidden"></div>
+          <div class="dialog-actions">
+            <button id="settings-cancel" class="btn">Cancelar</button>
+            <button id="settings-save" class="btn primary">Salvar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
