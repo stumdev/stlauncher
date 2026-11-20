@@ -1,0 +1,102 @@
+name: Release
+
+# Cria uma release com o .exe e o instalador sempre que uma tag vX.Y.Z é enviada:
+#   git tag v1.0.1 && git push origin v1.0.1
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Build Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: launcher/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: launcher/src-tauri
+
+      - name: Confere se a tag bate com a versão do app
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          $v = (Get-Content launcher/src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          if ("v$v" -ne "${{ github.ref_name }}") { throw "A tag ${{ github.ref_name }} não bate com a versão v$v do tauri.conf.json" }
+
+      - name: Instala dependências
+        working-directory: launcher
+        run: npm ci
+
+      - name: Compila o launcher
+        working-directory: launcher
+        env:
+          # Chave do updater (assina o instalador para o auto-update). Configure em Settings > Secrets.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npm run tauri build
+
+      - name: Separa os arquivos da release
+        shell: pwsh
+        run: |
+          $v = (Get-Content launcher/src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          New-Item -ItemType Directory -Force out | Out-Null
+          Copy-Item launcher/src-tauri/target/release/stlauncher.exe "out/STLauncher_${v}_portable.exe"
+          Copy-Item launcher/src-tauri/target/release/bundle/nsis/*-setup.exe out/
+          Copy-Item launcher/src-tauri/target/release/bundle/nsis/*-setup.exe.sig out/
+          Get-ChildItem out -File | ForEach-Object {
+            "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
+          } | Set-Content out/SHA256SUMS.txt -Encoding ascii
+          Get-ChildItem out | Format-Table Name, Length
+
+      - name: Notas da versão (do CHANGELOG)
+        shell: bash
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          awk -v ver="$v" '
+            $0 ~ "^## \\[" ver "\\]" {on=1; next}
+            on && /^## \[/ {exit}
+            on && /^\[[0-9]/ {exit}
+            on {print}
+          ' CHANGELOG.md > notes-changelog.md
+          {
+            echo "## Como instalar"
+            echo
+            echo "Baixe **\`STLauncher_${v}_x64-setup.exe\`** abaixo e abra. Não precisa de administrador e o launcher se atualiza sozinho depois."
+            echo
+            echo "Prefere sem instalar? Use \`STLauncher_${v}_portable.exe\` (essa versão não se auto-atualiza)."
+            echo
+            echo "> Se o Windows mostrar \"O Windows protegeu o computador\", clique em **Mais informações → Executar assim mesmo**."
+            echo
+            cat notes-changelog.md
+          } > notes.md
+          cat notes.md
+
+      - name: Publica a release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" out/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" out/* --title "STLauncher $GITHUB_REF_NAME" --notes-file notes.md --verify-tag
+          fi
+
+      - name: Guarda os arquivos (execução manual)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: STLauncher-windows
+          path: out/*

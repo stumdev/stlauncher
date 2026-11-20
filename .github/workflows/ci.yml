@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  api:
+    name: API
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  launcher:
+    name: Launcher
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: launcher/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: launcher/src-tauri
+      - name: Frontend (typecheck + build)
+        working-directory: launcher
+        run: |
+          npm ci
+          npm run build
+      - name: Testes do frontend
+        working-directory: launcher
+        run: node --test src/markdown.test.ts
+      - name: Testes do núcleo (Rust)
+        working-directory: launcher/src-tauri
+        run: cargo test --lib
