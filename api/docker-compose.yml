@@ -1,0 +1,13 @@
+﻿services:
+  api:
+    build: .
+    restart: unless-stopped
+    # Porta externa configurável por HOST_PORT no .env (padrão 8080). Dentro do container é sempre 8080.
+    ports: ["${HOST_PORT:-8080}:8080"]
+    env_file: .env
+    environment:
+      DATA_DIR: /data
+      PORT: "8080"
+      HOST: 0.0.0.0
+    volumes:
+      - ./data:/data
