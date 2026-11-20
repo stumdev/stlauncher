@@ -208,6 +208,16 @@ pub fn plan_sync(files: &[PackFile], local: &HashMap<String, String>, disk_manag
     plan
 }
 
+/// Arquivos que a sincronização deve tratar. Com `skip_mods`, tudo de mods/ fica de fora:
+/// nada é baixado, atualizado ou removido nessa pasta.
+pub fn files_to_sync(files: &[PackFile], skip_mods: bool) -> Vec<PackFile> {
+    files
+        .iter()
+        .filter(|f| !(skip_mods && f.path.split('/').next() == Some(MANAGED_DIR)))
+        .cloned()
+        .collect()
+}
+
 // ---------- execução ----------
 
 fn list_files(dir: &Path, rel: &str, out: &mut Vec<String>) {
@@ -248,17 +258,19 @@ fn hash_local(game: &Path, files: &[PackFile]) -> HashMap<String, String> {
 }
 
 /// Sincroniza a pasta do jogo com o manifest: apaga o que sobrou e baixa o que falta/mudou.
-pub async fn sync(client: &Client, dirs: &Dirs, api: &str, m: &Manifest, rep: &Reporter) -> Result<()> {
+pub async fn sync(client: &Client, dirs: &Dirs, api: &str, m: &Manifest, skip_mods: bool, rep: &Reporter) -> Result<()> {
     stage(rep, "Verificando o modpack...");
     let game = dirs.game();
     tokio::fs::create_dir_all(&game).await?;
     let prev = load_installed(dirs).await;
 
-    let (g2, files) = (game.clone(), m.files.clone());
+    let (g2, files) = (game.clone(), files_to_sync(&m.files, skip_mods));
     let plan = tokio::task::spawn_blocking(move || {
         let local = hash_local(&g2, &files);
         let mut managed = Vec::new();
-        list_files(&g2.join(MANAGED_DIR), MANAGED_DIR, &mut managed);
+        if !skip_mods {
+            list_files(&g2.join(MANAGED_DIR), MANAGED_DIR, &mut managed);
+        }
         plan_sync(&files, &local, &managed, &prev)
     })
     .await?;
@@ -285,12 +297,13 @@ pub async fn sync(client: &Client, dirs: &Dirs, api: &str, m: &Manifest, rep: &R
 }
 
 /// Modo offline: confere se o pack instalado está completo (existência + tamanho).
-pub fn verify_installed_quick(dirs: &Dirs, m: &Manifest) -> Result<()> {
+pub fn verify_installed_quick(dirs: &Dirs, m: &Manifest, skip_mods: bool) -> Result<()> {
     let game = dirs.game();
     let missing = m
         .files
         .iter()
         .filter(|f| !ALLOWED_FILES.contains(&f.path.as_str()))
+        .filter(|f| !(skip_mods && f.path.split('/').next() == Some(MANAGED_DIR)))
         .filter(|f| std::fs::metadata(game.join(&f.path)).map(|md| md.len() != f.size).unwrap_or(true))
         .count();
     if missing > 0 {
@@ -420,6 +433,14 @@ mod tests {
         m.files[0].sha256 = "a".repeat(64);
         m.neoforge_version = "../../x".into();
         assert!(validate_manifest(&m).is_err());
+    }
+
+    #[test]
+    fn ignorar_verificacao_tira_so_a_pasta_mods() {
+        let files = vec![pf("mods/a.jar", "a"), pf("config/c.toml", "c"), pf("servers.dat", "s"), pf("resourcepacks/r.zip", "r")];
+        assert_eq!(files_to_sync(&files, false).len(), 4);
+        let skip: Vec<_> = files_to_sync(&files, true).into_iter().map(|f| f.path).collect();
+        assert_eq!(skip, vec!["config/c.toml", "servers.dat", "resourcepacks/r.zip"]);
     }
 
     #[test]

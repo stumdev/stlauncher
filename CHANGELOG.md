@@ -2,6 +2,11 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.0.1] - 2026-11-20
+
+### Adicionado
+- Opção **Ignorar verificação dos mods** em Configurações → Avançado: o jogo abre com os mods que estiverem na pasta, mesmo faltando ou sobrando. O launcher não baixa, atualiza nem remove nada de `mods/` (as outras pastas continuam sincronizadas). Ao jogar com ela ligada, aparece um aviso.
+
 ## [1.0.0] - 2026-11-20
 
 ### Adicionado
@@ -18,4 +23,5 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 - Visual próprio "deepslate + glowstone": janela sem moldura, fontes embutidas, botão Jogar em bloco, terreno em pixel-art e ícone novo.
 - Build do `.exe` e do instalador nas **Releases** do GitHub.
 
+[1.0.1]: https://github.com/stumdev/stlauncher/releases/tag/v1.0.1
 [1.0.0]: https://github.com/stumdev/stlauncher/releases/tag/v1.0.0

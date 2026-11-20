@@ -14,6 +14,7 @@ interface Settings {
   width: number;
   height: number;
   quickPlay: boolean;
+  skipModCheck: boolean;
 }
 interface InitInfo {
   name: string;
@@ -346,6 +347,9 @@ function openSettings() {
   $<HTMLInputElement>("res-w").value = s.width ? String(s.width) : "";
   $<HTMLInputElement>("res-h").value = s.height ? String(s.height) : "";
   $<HTMLInputElement>("quickplay").checked = s.quickPlay;
+  $<HTMLInputElement>("skipmods").checked = s.skipModCheck;
+  // Abre a seção Avançado se a opção arriscada estiver ligada, para ela não ficar esquecida.
+  (document.querySelector(".advanced") as HTMLDetailsElement).open = s.skipModCheck;
   $<HTMLInputElement>("gamedir").value = s.gameDir;
   $("gamedir-hint").textContent = `Em uso: ${init.gameRoot}`;
   $<HTMLTextAreaElement>("jvm").value = s.jvmArgs;
@@ -365,6 +369,7 @@ async function saveSettings() {
     width: num("res-w"),
     height: num("res-h"),
     quickPlay: $<HTMLInputElement>("quickplay").checked,
+    skipModCheck: $<HTMLInputElement>("skipmods").checked,
     gameDir: $<HTMLInputElement>("gamedir").value.trim(),
     jvmArgs: $<HTMLTextAreaElement>("jvm").value.trim(),
   };

@@ -281,3 +281,11 @@ input[type="range"]:disabled::-webkit-slider-thumb { background: #4a5469; box-sh
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Opção arriscada (ignorar verificação dos mods): destaque em vermelho redstone */
+.setting.risky { margin-top: 18px; padding: 10px 12px 12px; border: 1px solid #5a2a28; border-radius: 6px; background: rgba(229, 83, 75, 0.06); }
+.setting.risky .check { margin-top: 0 !important; font-weight: 500 !important; }
+.setting.risky .check input:checked { background: var(--redstone); border-color: var(--redstone-lo); }
+.setting.risky .check input:checked::after { border-color: #fff; }
+.setting.risky .hint strong { color: #ff8f88; font-weight: 600; }
+.setting.risky code { font-family: var(--mono); font-size: 0.92em; }

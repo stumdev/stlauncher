@@ -83,10 +83,15 @@ pub async fn prepare(ctx: &Ctx, full: bool) -> Result<Prepared> {
     mojang::ensure_game(&ctx.client, &dirs, &vanilla, &features, full, rep).await?;
     let merged = neoforge::ensure(&ctx.client, &dirs, &java_exe, &vanilla, &manifest.neoforge_version, &features, full, rep).await?;
 
+    if s.skip_mod_check {
+        (ctx.rep)(Report::Warning {
+            message: "Verificação dos mods desligada nas Configurações: o jogo vai abrir com os mods que estiverem na pasta.".into(),
+        });
+    }
     if offline {
-        pack::verify_installed_quick(&dirs, &manifest)?;
+        pack::verify_installed_quick(&dirs, &manifest, s.skip_mod_check)?;
     } else {
-        pack::sync(&ctx.client, &dirs, &ctx.cfg.api_url, &manifest, rep).await?;
+        pack::sync(&ctx.client, &dirs, &ctx.cfg.api_url, &manifest, s.skip_mod_check, rep).await?;
     }
 
     stage(rep, "Iniciando o jogo...");

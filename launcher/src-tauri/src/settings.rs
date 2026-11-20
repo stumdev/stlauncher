@@ -25,6 +25,8 @@ pub struct Settings {
     pub height: u32,
     /// Conectar direto ao servidor ao abrir o jogo.
     pub quick_play: bool,
+    /// Não baixa, atualiza nem remove nada de mods/ (o jogo abre com o que estiver lá).
+    pub skip_mod_check: bool,
 }
 
 impl Default for Settings {
@@ -37,6 +39,7 @@ impl Default for Settings {
             width: 0,
             height: 0,
             quick_play: true,
+            skip_mod_check: false,
         }
     }
 }
